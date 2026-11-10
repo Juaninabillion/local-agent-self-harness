@@ -1,0 +1,34 @@
+services:
+  # The agent's only way out: forwards port 11434 to Ollama on the Mac, nothing else.
+  ollama-proxy:
+    image: alpine/socat
+    command: TCP-LISTEN:11434,fork,reuseaddr TCP:host.docker.internal:11434
+    networks:
+      sandbox:
+        aliases: [ollama.internal]   # Ollama rejects requests with non-local Host headers
+      outside: {}
+
+  agent:
+    build: ./agent
+    depends_on: [ollama-proxy]
+    networks: [sandbox]
+    environment:
+      OLLAMA_BASE_URL: http://ollama.internal:11434/v1
+      MUSE_MODEL: muse-glimmer:30b-mlx
+    volumes:
+      - ./workspace:/workspace
+      - ./workspace/core:/workspace/core:ro                       # instructions: operator-only
+      - ./workspace/tools/approved:/workspace/tools/approved:ro   # installed tools: operator-only
+    working_dir: /workspace
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 2g
+    cpus: 2
+    pids_limit: 256
+
+networks:
+  sandbox:
+    internal: true
+  outside: {}

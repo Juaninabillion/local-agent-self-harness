@@ -1,0 +1,6 @@
+.venv/
+.DS_Store
+__pycache__/
+*.pyc
+self_iter/workspace/memory/session.db*
+
